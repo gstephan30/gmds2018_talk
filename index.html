@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Interactive Feedback of Data Quality in Clinical Research</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Stephan Glöckner" />
+    <meta name="author" content="email: stephan.gloeckner@helmholtz-hzi.de" />
+    <link rel="stylesheet" href="css\style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Interactive Feedback of Data Quality in Clinical Research
+## A Case Study from an Infectious Diseases Cohort
+### Stephan Glöckner
+### email: <a href="mailto:stephan.gloeckner@helmholtz-hzi.de">stephan.gloeckner@helmholtz-hzi.de</a>
+### Osnabrück, September 3rd, 2018
+
+---
+
+
+class: inverse, center, middle
+
+# Outline
+
+&lt;h2&gt;1. Feedback of Data Quality&lt;/h2&gt; 
+
+&lt;h2&gt;2. TxCohort&lt;/h2&gt;
+
+&lt;h2&gt;3. developed Dashboard framework&lt;/h2&gt;
+
+&lt;h2&gt;4. What next?&lt;/h2&gt;
+
+
+---
+
+# 1. Feedback of Data Quality
+Single Page Applications (SPA) &amp; Dashboards
+
+* baehm
+* bush
+* baehm
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "14.6:9",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"navigation": {
+"scroll": false
+}
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
