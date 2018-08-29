@@ -38,3 +38,11 @@ Single Page Applications (SPA) & Dashboards
 * baehm
 * bush
 * baehm
+
+---
+
+class: last-slide, center, middle
+
+# Thank you
+
+---
