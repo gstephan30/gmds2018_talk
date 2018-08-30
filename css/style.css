@@ -145,3 +145,19 @@ h1, h2, h3 {
   border-top: none;
   
 }
+
+.frame-image {
+  max-width:87%;
+  max-height:87%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.motiv-image {
+  max-width:70%;
+  max-height:70%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto
+}
