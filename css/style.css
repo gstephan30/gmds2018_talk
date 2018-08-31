@@ -100,9 +100,11 @@ h1, h2, h3 {
 
 .remark-slide-number {
   font-size: 13pt;
-  color: #272822;
+  color: #FFFFFF;
   opacity: 1;
+  margin-bottom: -15px
 }
+
 .inverse .remark-slide-number {
   font-size: 13pt;
   color: #FAFAFA;
@@ -143,7 +145,10 @@ h1, h2, h3 {
   background-size: 1080px;
   background-color: #FFFFFF;
   border-top: none;
-  
+}
+
+.last-slide .remark-slide-number {
+  display: none;
 }
 
 .frame-image {
@@ -157,6 +162,22 @@ h1, h2, h3 {
 .motiv-image {
   max-width:70%;
   max-height:70%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto
+}
+
+.dzif-image{
+  position: absolute;
+  right: 10%;
+  bottom: 10%;
+  float: right;
+  overflow: auto;
+}
+
+.tx-flow-image{
+  max-width:55%;
+  max-height:55%;
   display: block;
   margin-left: auto;
   margin-right: auto

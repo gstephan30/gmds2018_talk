@@ -1,0 +1,850 @@
+---
+title: "Datenauswertung TxKohorte Mai 2018"
+#author: "Stephan Gloeckner"
+email: "stephan.gloeckner@helmholtz-hzi.de"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+    logo:  pics/hzi_logo.png
+    css: ["css/flex.css", "css/summarytools.css"]
+    source_code: embed
+    navbar:
+      - { title: "Back to Talk", href: "index.html#16"}
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(lubridate)
+library(plotly)
+library(flexdashboard)
+library(kableExtra)
+library(DT)
+library(knitr)
+library(tidyverse)
+library(viridis)
+# data simulation
+dfr <- tibble(Site = sample(paste0("Center_", 1:5), 2000, replace = TRUE),
+             Organ = c(sample("Heart", 58, replace = TRUE),
+                       sample("Liver", 89, replace = TRUE),
+                       sample("Lung", 47, replace = TRUE),
+                       sample("Kidney", 871, replace = TRUE),
+                       sample("Pancreas", 589, replace = TRUE),
+                       sample("Stem Cells", 346, replace = TRUE)),
+             date = sample(seq(as.Date('2017/01/01'), as.Date('2018/08/31'), by="day"), 2000, replace = TRUE)
+             )
+# tab_overview
+tab_overview <- dfr %>% 
+  count(Site, Organ) %>% 
+  spread(Organ, n) %>% 
+  bind_rows(., tibble(Site = "TOTAL", 
+                      Heart = sum(.$Heart, na.rm=T),
+                      Kidney = sum(.$Kidney, na.rm=T),
+                      Liver = sum(.$Liver, na.rm=T),
+                      Lung = sum(.$Lung, na.rm=T),
+                      Pancreas = sum(.$Pancreas, na.rm=T),
+                      `Stem Cells` = sum(.$`Stem Cells`, na.rm=T))) %>% 
+  mutate(TOTAL = rowSums(.[2:7])) 
+
+# fig_overview
+fig_overview <- tab_overview %>% 
+  gather(key, value, -Site) %>% 
+  filter(key != "TOTAL",
+         Site != "TOTAL") %>% 
+  plotly::plot_ly(x = ~value, y = ~Site, color = ~key, colors = viridis_pal(option = "D")(6)) %>%
+  layout(barmode='stack')
+
+# graph_site
+graph_site <- dfr %>%
+  select(Site, date) %>%
+  count(Site, date) %>% 
+  group_by(Site) %>%
+  mutate(cumsum=cumsum(n)) %>%
+  select(-n) %>%
+  plotly::plot_ly(
+    x = ~date, 
+    y = ~cumsum,
+    color = ~Site,
+    colors = viridis_pal(option = "D")(5)
+  ) %>%
+  add_lines() %>%
+  layout(
+    xaxis = list(title = "Date",zeroline = F),
+    yaxis = list(title = "Patienten", zeroline = F)
+  )
+
+
+
+# biosample generation
+blood_types <- c("EDTA-Plasma", "EDTA-Primärröhrchen", "PBMCs", "RNA", "Serum", "keine Angabe", NA, "EDTA-Buffy Coat")
+other_types <- c("Stuhl", "Urin", NA, "Bukkaler Abstrich", "Rachenspülwasser")
+
+dfr_bio <- tibble(Site = sample(paste0("Center_", 1:5), 2000*7, replace = TRUE),
+       Organ = c(sample("Heart", 58*7, replace = TRUE),
+                 sample("Liver", 89*7, replace = TRUE),
+                 sample("Lung", 47*7, replace = TRUE),
+                 sample("Kidney", 871*7, replace = TRUE),
+                 sample("Pancreas", 589*7, replace = TRUE),
+                 sample("Stem Cells", 346*7, replace = TRUE)),
+       date = sample(seq(as.Date('2017/01/01'), as.Date('2018/08/31'), by="day"), 2000*7, replace = TRUE),
+       ID = sample(1:2000, 2000*7, replace = TRUE),
+       type = c(sample("blood", 1389*7, replace = TRUE),
+                sample("other", 611*7, replace = TRUE))
+) %>% 
+  mutate(sample_type = ifelse(type == "blood", 
+                              sample(blood_types, 1389*7, replace = TRUE), 
+                              sample(other_types, 611*7, replace = TRUE))
+    )
+
+total_blood<-dfr_bio %>%
+  count(type, ID, Site, Organ, sample_type) %>% 
+  filter(type=="blood") %>%
+  group_by(sample_type, Site) %>%
+  summarise(samples=sum(n)) %>%
+  spread(Site, samples, fill = 0)
+
+total_others<-dfr_bio %>%
+  count(type, ID, Site, Organ, sample_type) %>% 
+  filter(type=="other") %>%
+  group_by(sample_type, Site) %>%
+  summarise(samples=sum(n)) %>%
+  spread(Site, samples, fill = 0)
+
+gen_bio_table<-function(organ, cat){
+  df<-dfr_bio %>%
+    count(type, ID, Site, Organ, sample_type) %>% 
+    filter(Organ==organ & type==cat) %>%
+    group_by(sample_type, Site) %>%
+    summarise(samples=sum(n)) %>%
+    spread(Site, samples, fill = 0)
+  return(df)
+}
+
+organs_tab<-list("Kidney", "Liver", "Lung", "Heart", "Pancreas", "Stem Cells")
+cat<-list("blood", "other")
+tab_args<-expand.grid(organs_tab, cat)
+names<-tab_args %>% unite(vector, c(Var1, Var2), sep = "_")
+
+df_tab_bio<-NULL
+for (i in 1:nrow(tab_args)){
+  df_tab_bio[[i]]<-gen_bio_table(tab_args[i,1], tab_args[i,2])
+}
+names(df_tab_bio)<-names$vector
+df_table <- df_tab_bio[[1]]
+data <- df_tab_bio[[6]] %>% ungroup()
+
+data <- NULL
+
+gen_total <- function (data) {
+  data <- data %>% ungroup()
+  if (length(data)>1) {
+    num_vecs <- c("Center_1", "Center_2", "Center_3", "Center_4", "Center_5")
+    sum_data <- data %>% 
+      rbind(c("TOTAL", c(select_if(data, is.numeric) %>% colSums())) %>% unlist() %>% as.vector()) %>% 
+      mutate_at(vars(num_vecs), as.numeric) %>% 
+      mutate(TOTAL = rowSums(.[2:6]))
+    return(sum_data)
+  }
+}
+ 
+df_final <- map(df_tab_bio, gen_total)
+names(df_final) <- names$vector
+
+total_blood <- gen_total(total_blood)
+total_others <- gen_total(total_others)
+
+blood_value <- total_blood %>%
+  filter(sample_type=="TOTAL") %>%
+  select(TOTAL) %>% as.numeric()
+
+other_value <- total_others %>%
+  filter(sample_type=="TOTAL") %>%
+  select(TOTAL) %>% as.numeric()
+
+pat_value <- dfr_bio %>%
+  count(ID)
+pat_value <- nrow(pat_value)
+
+
+# Follow-up generation
+library(lubridate)
+df
+dfr_fu <- tibble(Site = sample(paste0("Center_", 1:5), 2000, replace = TRUE),
+       Organ = c(sample("Heart", 58, replace = TRUE),
+                 sample("Liver", 89, replace = TRUE),
+                 sample("Lung", 47, replace = TRUE),
+                 sample("Kidney", 871, replace = TRUE),
+                 sample("Pancreas", 589, replace = TRUE),
+                 sample("Stem Cells", 346, replace = TRUE)),
+       TxDate = sample(seq(as.Date('2017/01/01'), as.Date('2018/08/31'), by="day"), 2000, replace = TRUE),
+       FuDate = sample(seq(as.Date('2017/01/01'), as.Date('2018/08/31'), by="day"), 2000, replace = TRUE),
+       ID = sample(1:2000, 2000, replace = TRUE)
+) 
+
+export_date <- dmy("31-8-2018")
+
+fu_eval <- dfr_fu %>%
+  mutate(TxPeriod=export_date-TxDate,
+         FuPeriod=export_date-FuDate,
+         Fu_3m=interval(TxDate %m+% months(3)-days(28), TxDate %m+% months(3)+days(28)), # when should the FU be?
+         Fu_6m=interval(TxDate %m+% months(6)-days(28), TxDate %m+% months(6)+days(28)),
+         Fu_9m=interval(TxDate %m+% months(9)-days(28), TxDate %m+% months(9)+days(28)),
+         Fu_12m=interval(TxDate %m+% months(12)-days(28), TxDate %m+% months(12)+days(28)),
+         checked_3m=FuDate %within% Fu_3m, # was the FU in this interval?
+         checked_6m=FuDate %within% Fu_6m,
+         checked_9m=FuDate %within% Fu_9m,
+         checked_12m=FuDate %within% Fu_12m,
+         mandatory_3m=Fu_3m %within% interval(TxDate,TxDate+TxPeriod), # should there be a FU in this interval?
+         mandatory_6m=Fu_6m %within% interval(TxDate,TxDate+TxPeriod),
+         mandatory_9m=Fu_9m %within% interval(TxDate,TxDate+TxPeriod),
+         mandatory_12m=Fu_12m %within% interval(TxDate,TxDate+TxPeriod),
+         eval_3m=ifelse(checked_3m==T & mandatory_3m==T, "ok",
+                        ifelse(checked_3m==F & mandatory_3m==F, "ok",
+                               ifelse(checked_3m==T & mandatory_3m==F, "not needed","not done"))),
+         eval_6m=ifelse(checked_6m==T & mandatory_6m==T, "ok",
+                        ifelse(checked_6m==F & mandatory_6m==F, "ok",
+                               ifelse(checked_6m==T & mandatory_6m==F, "not needed","not done"))),
+         eval_9m=ifelse(checked_9m==T & mandatory_9m==T, "ok",
+                        ifelse(checked_9m==F & mandatory_9m==F, "ok",
+                               ifelse(checked_9m==T & mandatory_9m==F, "not needed","not done"))),
+         eval_12m=ifelse(checked_12m==T & mandatory_12m==T, "ok",
+                         ifelse(checked_12m==F & mandatory_12m==F, "ok",
+                                ifelse(checked_12m==T & mandatory_12m==F, "not needed","not done"))))
+
+tab_fu <- fu_eval %>%
+  select(ID, Organ, Site, TxDate, FuDate, contains("check"), contains("mandatory")) %>%
+  filter(!(is.na(TxDate) | is.na(FuDate))) %>%
+  select(-TxDate, -FuDate) %>%
+  group_by(ID, Organ, Site) %>%
+  summarise(ACTUAL_month_3=1*any(checked_3m),
+            TARGET_month_3=1*any(mandatory_3m),
+            ACTUAL_month_6=1*any(checked_6m),
+            TARGET_month_6=1*any(mandatory_6m),
+            ACTUAL_month_9=1*any(checked_9m),
+            TARGET_month_9=1*any(mandatory_9m),
+            ACTUAL_month_12=1*any(checked_12m),
+            TARGET_month_12=1*any(mandatory_12m))
+
+report_tab_fu <- tab_fu %>%
+  group_by(Site, Organ) %>%
+  summarise(ACTUAL_month_3=sum(ACTUAL_month_3),
+            TARGET_month_3=sum(TARGET_month_3),
+            Performance_month_3=round(100*ACTUAL_month_3/TARGET_month_3, digits=2),
+            ACTUAL_month_6=sum(ACTUAL_month_6),
+            TARGET_month_6=sum(TARGET_month_6),
+            Performance_month_6=round(100*ACTUAL_month_6/TARGET_month_6, digits=2),
+            ACTUAL_month_9=sum(ACTUAL_month_9),
+            TARGET_month_9=sum(TARGET_month_9),
+            Performance_month_9=round(100*ACTUAL_month_9/TARGET_month_9, digits=2),
+            ACTUAL_month_12=sum(ACTUAL_month_12),
+            TARGET_month_12=sum(TARGET_month_12),
+            Performance_month_12=round(100*ACTUAL_month_12/TARGET_month_12, digits=2)) %>%
+  ungroup()
+
+#### which graph and tab has to be rendered
+fu_exists <- report_tab_fu %>%
+  group_by(Organ, Site) %>%
+  summarise(count=n()) %>%
+  select(-count) %>%
+  ungroup() %>%
+  as.data.frame()
+fu_exists <- fu_exists %>% group_by(Organ) %>% summarise(count=n()) %>% as.data.frame()
+
+sketch <- htmltools::withTags(table(class='display',thead(tr(
+  th(rowspan=2, "Center"),
+  th(colspan=3, "Month 3"),
+  th(colspan=3, "Month 6"),
+  th(colspan=3, "Month 9"),
+  th(colspan=3, "Month 12")),
+  tr(lapply(rep(c("ACTUAL", "TARGET", "in %"), 4), th)))))
+
+tab <- function(organ){
+  tab <- report_tab_fu %>%
+    filter(Organ==organ) %>%
+    select(-Organ)
+  tab <- datatable(tab, container = sketch, rownames=F)
+  return(tab)
+}
+
+tables <- NULL
+for (i in 1:nrow(fu_exists)) {
+  tables[[i]] <- tab(fu_exists[i,1])
+}
+
+#### Figure Preparation            
+fig_fu <- report_tab_fu %>%
+  gather(contains("ACTU"), contains("TARG"), key="time", value = "Patients") %>%
+  select(-contains("Perf")) %>%
+  separate(time, c("ind", "times", "month")) %>% 
+  select(-contains("time"))
+fig_fu$month <- sapply(fig_fu$month, as.numeric)
+fig_fu <- fig_fu %>% select(Site, Organ, Indikator=ind, Monat=month, Patienten=Patients)
+
+graph <- function(organ){
+  g <- fig_fu %>%
+    filter(Organ==organ) %>%
+    arrange(desc(Indikator))
+  g$Indikator <- factor(g$Indikator, ordered = T)
+  g$Indikator <- factor(g$Indikator,levels(g$Indikator)[c(2,1)])
+  g <- g %>%
+    ggplot(aes(x=Monat,y=Patienten,group=Indikator,color=Indikator,fill=Indikator)) +
+    geom_line() +
+    geom_area(position="identity") +
+    facet_wrap("Site",nrow=1) +
+    scale_color_manual(values=c("#CC6666", "#66CC99"))+
+    scale_fill_manual(values=c("#CC6666", "#66CC99")) +
+    scale_x_continuous(breaks=c(3,6,9,12)) +
+    #scale_y_continuous(position="right") +
+    #theme(axis.text.x = element_text(angle = 45)) +
+    theme_bw()
+  #theme(strip.text = element_text(size=16), 
+  #      axis.text.x = element_text(angle = 45, size=12), 
+  #      axis.text.y = element_text(size=12))
+  g <- ggplotly(g, height=300, width=1500)
+  
+  return(g)
+}
+
+graphs <- NULL
+for (i in 1:nrow(fu_exists)) {
+  graphs[[i]] <- graph(fu_exists[i,1])
+}
+
+#### Save 4 RMD - TABs & GRAPHs ####
+fu_exists
+fu_herz <- list(tables[[1]], graphs[[1]])
+fu_leber <- list(tables[[2]], graphs[[2]])
+fu_lunge <- list(tables[[3]], graphs[[3]])
+fu_niere <- list(tables[[4]], graphs[[4]])
+fu_pankreas <- list(tables[[5]], graphs[[5]])
+fu_stammzellen <- list(tables[[6]], graphs[[6]])
+
+### generate data quality
+library(formattable)
+library(kableExtra)
+library(RColorBrewer)
+
+simulate_table <- function() {
+  tibble(Variable = sample(paste0("Item_", 1:9), 9),
+         Center_1 = sample(75:90, 9, replace = TRUE),
+         Center_2 = sample(75:90, 9, replace = TRUE),
+         Center_3 = sample(75:90, 9, replace = TRUE),
+         Center_4 = sample(75:90, 9, replace = TRUE),
+         Center_5 = sample(75:90, 9, replace = TRUE))
+}
+gen_total2 <- function (data) {
+  if (length(data)>1) {
+    num_vecs <- c("Center_1", "Center_2", "Center_3", "Center_4", "Center_5")
+    sum_data <- data %>% 
+      rbind(c("TOTAL", c(select_if(data, is.numeric) %>% colMeans())) %>% unlist() %>% as.vector()) %>% 
+      mutate_at(vars(num_vecs), as.numeric) %>% 
+      mutate(TOTAL = rowMeans(.[2:6])) %>% 
+      mutate_if(is.numeric, round, digits = 0)
+    return(sum_data)
+  }
+}
+col_rank <- function (vec) {
+  # function to color background in accordance to its value
+  # input vector : vec
+  # output vector : fin
+  farben <- length(unique(vec))
+  palette <- brewer.pal(farben, "RdYlBu")
+  max_farben <- vec %>% as_tibble %>% 
+    arrange(value) %>% distinct(value) %>% 
+    cbind(palette) 
+  fin <- vec %>% as_tibble() %>% 
+    left_join(max_farben) %>% # here we join the unique colors with its values
+    select(2) %>% unlist() %>% as.vector()
+  return(fin)
+}
+make_tbl_colorful <- function (table) {
+  gen_total2(table) %>% 
+    arrange(Variable) %>%
+    mutate_if(is.numeric, function (x) cell_spec(x, background = col_rank(x), color = "#a8a8a8", bold = TRUE)) %>% 
+    kable(escape = F, align = "c") %>%
+    kable_styling(c("striped", "condensed"), full_width = F)
+}
+
+make_table <- function(){
+  simulate_table() %>% 
+    gen_total2() %>% 
+    make_tbl_colorful()
+}
+
+tab_1oc <- simulate_table() %>% gen_total2()
+tab1 <- make_tbl_colorful(tab_1oc)
+
+tab_2oc <- simulate_table() %>% gen_total2()
+tab2 <- make_tbl_colorful(tab_2oc)
+
+tab_3oc <- simulate_table() %>% gen_total2()
+tab3 <- make_tbl_colorful(tab_3oc)
+
+ranking_gen <- tab_1oc %>% filter(grepl("TOTAL", Variable)) %>% select(-1, -TOTAL) %>% unlist() 
+ranking_postop <- tab_1oc %>% filter(grepl("TOTAL", Variable)) %>% select(-1, -TOTAL) %>% unlist() 
+ranking_bak <- tab_1oc %>% filter(grepl("TOTAL", Variable)) %>% select(-1, -TOTAL) %>% unlist() 
+
+avg_gen_site <- tab_1oc %>% filter(grepl("TOTAL", Variable)) %>% select(TOTAL) %>% unlist() %>% as.vector()
+avg_postop <- tab_2oc %>% filter(grepl("TOTAL", Variable)) %>% select(TOTAL) %>% unlist() %>% as.vector()
+avg_bak <- tab_3oc %>% filter(grepl("TOTAL", Variable)) %>% select(TOTAL) %>% unlist() %>% as.vector()
+
+make_ranking_trend <- function(datum) {
+  id <- ymd(datum)
+  simulate_table() %>% gen_total2() %>% filter(grepl("TOTAL", Variable)) %>% 
+    select(-1, -TOTAL) %>% 
+    mutate(id = id)
+}
+
+datum <- sapply(seq(ymd('2017-1-1'), ymd('2018-8-1'), by = "month"), list)
+
+gen_plot <- map_dfr(datum, make_ranking_trend)
+postop_plot <- map_dfr(datum, make_ranking_trend)
+bak_plot <- map_dfr(datum, make_ranking_trend)
+
+
+
+```
+
+Studienpopulation 
+=======================================================================
+
+Row 
+-----------------------------------------------------------------------
+
+### Grafik Übersicht Studienpopulation
+```{r}
+fig_overview
+```
+
+Row 
+-----------------------------------------------------------------------
+### Populationstrend nach Zentrum
+```{r}
+graph_site
+```
+
+
+### Tabelle Übersicht Studienpopulation
+```{r}
+tab_overview %>% 
+  knitr::kable() %>%
+  kable_styling()
+```
+
+### Auf einem Blick
+```{r}
+
+```
+
+
+Bioproben {data-orientation=rows}
+=======================================================================
+
+Column 
+-----------------------------------------------------------------------
+
+### Blutproben
+
+```{r}
+articles <- blood_value
+valueBox(articles, icon = "ion-waterdrop", color = "#830303")
+```
+
+### Andere Proben
+
+```{r}
+comments <- other_value
+valueBox(comments, icon = "fa-heart", color = "#B07C9E")
+```
+
+### Patienten mit Bioproben
+
+```{r}
+spam <- pat_value
+valueBox(spam, icon = "ion-person-stalker", color = "#7EA16B")
+```
+
+Column {.tabset data-height=1300}
+-----------------------------------------------------------------------
+ **Blutproben**
+ 
+### TOTAL
+
+```{r}
+datatable(
+  total_blood, extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv')
+  )
+)
+```
+
+### Niere
+```{r}
+datatable(
+  df_final[[1]], extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv')
+  )
+)
+```
+
+### Leber
+```{r}
+datatable(
+  df_final[[2]], extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv')
+  )
+)
+```
+
+### Lunge
+```{r}
+datatable(
+  df_final[[3]], extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv')
+  )
+)
+```
+
+### Herz
+```{r}
+datatable(
+  df_final[[4]], extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv')
+  )
+)
+```
+
+### Pankreas
+```{r}
+datatable(
+  df_final[[5]], extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv')
+  )
+)
+```
+
+### Stammzellen
+```{r}
+datatable(
+  df_final[[6]], extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv')
+  )
+)
+```
+
+Column {.tabset data-height=1000}
+-----------------------------------------------------------------------
+ **Andre Proben**
+
+
+### TOTAL
+
+```{r}
+datatable(
+  total_others, extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv')
+  )
+)
+
+```
+
+### Niere
+```{r}
+datatable(
+  df_final[[7]], extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv')
+  )
+)
+
+```
+
+### Leber
+```{r}
+datatable(
+  df_final[[8]], extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv')
+  )
+)
+```
+
+### Lunge
+```{r}
+datatable(
+  df_final[[9]], extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv')
+  )
+)
+```
+
+### Herz
+```{r}
+datatable(
+  df_final[[10]], extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv')
+  )
+)
+```
+
+### Pankreas
+```{r}
+datatable(
+  df_final[[11]], extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv')
+  )
+)
+```
+
+### Stammzellen
+```{r}
+datatable(
+  df_final[[12]], extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv')
+  )
+)
+```
+
+Column {data-height=100}
+-----------------------------------------------------------------------
+[Doppelt klassifizierte Patienten](#page-3)
+
+
+Page 3 {.hidden}
+=======================================================================
+
+### Doppelt klassifizierte Patienten
+```{r eval=FALSE}
+knitr::kable(doubles)
+```
+
+Follow - Up
+=======================================================================
+
+Row {.tabset .tabset-fade} 
+-----------------------------------------------------------------------
+
+### Übersicht Niere FU
+Anzahl der Patienten im FU
+```{r}
+fu_niere[[2]]
+```
+
+### Übersicht Leber FU
+Anzahl der Patienten im FU
+```{r}
+fu_leber[[2]]
+```
+
+### Übersicht Lunge FU
+Anzahl der Patienten im FU
+```{r}
+fu_lunge[[2]]
+```
+
+### Übersicht Pankreas FU
+Anzahl der Patienten im FU
+```{r}
+fu_pankreas[[2]]
+```
+
+### Übersicht Stammzellen FU
+Anzahl der Patienten im FU
+```{r}
+fu_stammzellen[[2]]
+```
+
+### Übersicht Herz FU
+Anzahl der Patienten im FU
+```{r}
+fu_herz[[2]]
+```
+
+Row {.tabset .tabset-fade} 
+-----------------------------------------------------------------------
+### Übersicht Niere FU
+```{r}
+fu_niere[[1]]
+```
+
+### Übersicht Leber FU
+```{r}
+fu_leber[[1]]
+```
+
+### Übersicht Lunge FU
+```{r}
+fu_lunge[[1]]
+```
+
+### Übersicht Pankreas FU
+```{r}
+fu_pankreas[[1]]
+```
+
+### Übersicht Stammzellen FU
+```{r}
+fu_stammzellen[[1]]
+```
+
+### Übersicht Herz FU
+```{r}
+fu_herz[[1]]
+```
+
+Row {data-height=100}
+-----------------------------------------------------------------------
+### Daten - Probleme
+[Übersicht Patienten ohne Tx und FU Datum](#page-4)
+
+
+Page 4 {.hidden}
+=======================================================================
+
+### Übersicht Patienten ohne Tx und FU Datum
+```{r eval=FALSE}
+no_TxDate
+no_FuDate
+```
+
+
+Generell {data-navmenu="Datenqualität" data-icon="fa-list" data-orientation=columns}
+=============================
+
+Column {data-width=200}
+-----------------------------------------------------------------------
+
+### Datenqualitaet Generelle Informationen
+```{r}
+rate <- avg_gen_site
+gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
+  success = c(80, 100), warning = c(60, 79.99), danger = c(0, 59.99)
+))
+```
+
+### Ranking
+```{r}
+knitr::kable(ranking_gen, "html") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(1:3, bold = T, font_size=18, color = "white", background = "#4292c6")
+```
+
+### Datenqualitaet ueber Zeit
+```{r}
+g <- gen_plot %>% 
+  gather(center, missing, -id) %>% 
+  ggplot(aes(id, missing, color = center)) +
+  geom_line() +
+  scale_color_viridis_d()
+
+plotly::ggplotly(g)
+```
+
+
+Column
+-----------------------------------------------------------------------
+
+### Variable pro Center
+
+```{r}
+tab1
+```
+
+
+Post-op {data-navmenu="Datenqualität" data-icon="fa-list" data-orientation=columns}
+=============================
+
+Column {data-width=200}
+-----------------------------------------------------------------------
+
+### Datenqualitaet Post operative Informationen
+```{r}
+rate <- avg_postop
+gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
+  success = c(80, 100), warning = c(60, 79.99), danger = c(0, 59.99)
+))
+```
+
+### Ranking
+```{r}
+knitr::kable(ranking_postop, "html") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(1:3, bold = T, font_size=18, color = "white", background = "#4292c6")
+```
+
+### Datenqualitaet ueber Zeit
+```{r}
+g2 <- postop_plot %>% 
+  gather(center, missing, -id) %>% 
+  ggplot(aes(id, missing, color = center)) +
+  geom_line() +
+  scale_color_viridis_d()
+
+plotly::ggplotly(g2)
+
+```
+
+Column
+-----------------------------------------------------------------------
+
+### Variable pro Center
+
+```{r}
+tab2
+```
+
+Bakterielle Infektionen {data-navmenu="Datenqualität" data-icon="fa-list" data-orientation=columns}
+=============================
+
+Column {data-width=200}
+-----------------------------------------------------------------------
+
+### Datenqualitaet Bakterielle Infektionenn
+```{r}
+rate <- avg_bak
+gauge(rate, min = 0, max = 100, symbol = '%', gaugeSectors(
+  success = c(80, 100), warning = c(60, 79.99), danger = c(0, 59.99)
+))
+```
+
+### Ranking
+```{r}
+knitr::kable(ranking_bak, "html") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(1:3, bold = T, font_size=18, color = "white", background = "#4292c6")
+```
+
+### Datenqualitaet ueber Zeit
+```{r}
+g3 <- bak_plot %>% 
+  gather(center, complete, -id) %>% 
+  ggplot(aes(id, complete, color = center)) +
+  geom_line() +
+  scale_color_viridis_d()
+
+plotly::ggplotly(g3)
+
+```
+
+Column
+-----------------------------------------------------------------------
+
+### Variable pro Center
+
+```{r}
+tab3
+```
+
+
