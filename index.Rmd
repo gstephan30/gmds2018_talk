@@ -37,12 +37,20 @@ Evaluation of Data Quality
 
 <img class="frame-image" src="pics/framework_weiskopf.png" alt="Data Quality Framework">
 
+<div style="position: absolute; bottom: 20px; right: 20px; text-align:right;">
+   Weiskopf, Bakken, Hripcsak & Weng (2017)
+</div>
+
 ---
 
 # 1. Feedback of Data Quality
 Data Quality Feedback
 
 <img class="motiv-image" src="pics/motivation.png" alt="Motivation with Feedback">
+
+<div style="position: absolute; bottom: 20px; right: 20px; text-align:right;">
+   Glöckner & Sinnott (2016)
+</div>
 
 ---
 
@@ -59,7 +67,9 @@ Interactivity needed?
 * dynamic, simple, accessible --> __web-based & real-time applications__
 
 
-
+<div style="position: absolute; bottom: 20px; right: 20px; text-align:right;">
+   Knaflic (2015) & Few (2013)
+</div>
 
 
 ---
