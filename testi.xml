@@ -1,0 +1,12 @@
+<GENERIC_ROUGHDRAFT>
+    <HEADER compName="California" dateCreated="2018-08-07">
+      <COMP_INFO>
+    </HEADER>
+     <COVERSHEET>
+      <ESTIMATE_INFO eName="MATTHEW_ANDERSON" iName="Matthew Anderson" priceList="MAY18" laborEff="Restoration/Service/Remodel" claimNumber="01" policyNumber="00000000000" typeOfLoss="Hail" deprNonMat="1" deprOandP="1" deprTaxes="1" onsite="1" recipientsXNAddress="California_BD" carrierId="111111" estimateType="Structural"/>
+      <ADDRESSES>
+        <ADDRESS type="Property" street="123 Street Cr" city="Idaho Falls" state="ID" zip="00000" primary="1"/>
+        <ADDRESS type="Home" street="123 Street Cr" city="City" state="ID" zip="00000"/>
+      </ADDRESSES>
+  </COVERSHEET>
+</GENERIC_ROUGHDRAFT>

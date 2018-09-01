@@ -140,11 +140,15 @@ h1, h2, h3 {
   padding: 4px;
 }
 
-.last-slide {
+.last-slide  {
   background-image: url(../pics/koala.jpg);
   background-size: 1080px;
   background-color: #FFFFFF;
   border-top: none;
+  text-shadow: 1px 1px 2px white;
+  font-size: 48px;
+  font-weight: bold;
+
 }
 
 .last-slide .remark-slide-number {

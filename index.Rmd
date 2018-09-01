@@ -25,7 +25,7 @@ class: inverse, center, middle
 
 <h2>2. TxCohort</h2>
 
-<h2>3. developed Dashboard framework</h2>
+<h2>3. Developed Dashboard framework</h2>
 
 <h2>4. What next?</h2>
 
@@ -50,7 +50,7 @@ Data Quality Feedback
 # 1. Feedback of Data Quality
 Interactivity needed?
 
-* in some way, complex/high dimensional data has to be visualized
+* in some way, complex/high dimensional data has to be reported
 
 * __busy__ clinicans/investigator need all information on the __first look__
 
@@ -91,15 +91,19 @@ class: dzif
 ---
 
 # Sometimes you have to run before you can walk.
- 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/ZwOxM0-byvc" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+
+```{r include=FALSE, eval=FALSE}
+#<iframe width="1280" height="720" src="https://www.youtube.com/embed/Xte_oOfBv_g" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+# 560-315
+```
+<div align="center">
+<iframe width="896" height="504" src="https://www.youtube.com/embed/M-oALaQctww" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>
 
 
 ---
 
-# 3. TxDashboard
-
-### Needs Assessment 
+# 3. TxDashboard - Needs Assessment 
 
 * Study Nurses, Clinicans, (Local-) Investigators
 
@@ -109,19 +113,21 @@ class: dzif
     + Follow-up Performance
     + Data Quality
     
+* single page, quick to understand
+
 * common scripting language researcher and clinican (can) understand:
+
     + __language__: `R`
     + __documentation__: `rmarkdown`
     + __graphs__: `ggplot2`, `googleVis`, `leaflet`, `plotly`
-    + __tables__: `knitr`, `kableExtra`, `DT`
-    
-* single page, quick to understand
+    + __tables__: `knitr`, `kableExtra`, `DT`, `formattable`
+    + __color-scales__: `viridis`, colorbrewer: `RdYlBu`
 
 ---
 
 # 3. TxDashboard
 
-Demonstration
+[Demonstration](dashboard.html)
 
 
 ---
@@ -134,15 +140,17 @@ Demonstration
 
 * implementation of gamified features (leaderboards, awards, badges)
 
-* measuring user interaction (user research)
+* UXD
+
+* measuring user interaction (UXR)
 
 * extension to `angular.js`/`shiny` frameworks (more flexibility)
 
 
 ---
 
-class: last-slide, center, middle
+class: last-slide
 
-# Thank you
+Thank you for your attention.
 
 ---
