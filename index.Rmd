@@ -27,7 +27,7 @@ class: inverse, center, middle
 
 <h2>3. Developed Dashboard framework</h2>
 
-<h2>4. What next?</h2>
+<h2>4. Limitations/Conclusions</h2>
 
 
 ---
@@ -99,8 +99,9 @@ class: dzif
 
 
 ---
+class: ironman
 
-# Sometimes you have to run before you can walk.
+# Sometimes you have to run, before you can walk
 
 
 ```{r include=FALSE, eval=FALSE}
@@ -142,20 +143,26 @@ class: dzif
 
 ---
 
-# 4. What's next?
+# 4. 4. Limitations/Conclusions?
 
-
+### Limitations
 
 * Extension of data quality assessment (more dimensions & indicators in regards to user needs)
 
 * implementation of gamified features (leaderboards, awards, badges)
 
-* UXD
+* check lists (case-based) for study nurses
 
-* measuring user interaction (UXR)
 
-* extension to `angular.js`/`shiny` frameworks (more flexibility)
+### Conclusions
 
+* busy investigators need fast, individualized feedback
+
+* dashboards provide a interactive solution, but `angular.js` dashboards need to be considered
+
+* data transfromation still the most cumbersum process
+ 
+* DQ needs to be extended and visualization needs improvement (UXD, UXR)
 
 ---
 
