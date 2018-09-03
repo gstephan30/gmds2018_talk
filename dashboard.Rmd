@@ -220,22 +220,22 @@ Column
 ### Blutproben
 
 ```{r}
-articles <- blood_value
-valueBox(articles, icon = "ion-waterdrop", color = "#830303")
+blood <- blood_value
+valueBox(blood, icon = "ion-waterdrop", color = "#830303")
 ```
 
 ### Andere Proben
 
 ```{r}
-comments <- other_value
-valueBox(comments, icon = "fa-heart", color = "#B07C9E")
+other <- other_value
+valueBox(other, icon = "ion-heart", color = "#B07C9E")
 ```
 
 ### Patienten mit Bioproben
 
 ```{r}
-spam <- pat_value
-valueBox(spam, icon = "ion-person-stalker", color = "#7EA16B")
+n_pats <- pat_value
+valueBox(n_pats, icon = "ion-person-stalker", color = "#7EA16B")
 ```
 
 Column {.tabset data-height=1300}
@@ -668,7 +668,8 @@ gen_total2 <- function (data) {
   if (length(data)>1) {
     num_vecs <- c("Center_1", "Center_2", "Center_3", "Center_4", "Center_5")
     sum_data <- data %>% 
-      rbind(c("TOTAL", c(select_if(data, is.numeric) %>% colMeans())) %>% unlist() %>% as.vector()) %>% 
+      rbind(c("TOTAL", c(select_if(data, is.numeric) %>% 
+                           colMeans())) %>% unlist() %>% as.vector()) %>% 
       mutate_at(vars(num_vecs), as.numeric) %>% 
       mutate(TOTAL = rowMeans(.[2:6])) %>% 
       mutate_if(is.numeric, round, digits = 0)
@@ -690,7 +691,7 @@ col_rank <- function (vec) {
   return(fin)
 }
 make_tbl_colorful <- function (table) {
-  gen_total2(table) %>% 
+  table %>% 
     arrange(Variable) %>%
     mutate_if(is.numeric, function (x) cell_spec(x, background = col_rank(x), color = "#a8a8a8", bold = TRUE)) %>% 
     kable(escape = F, align = "c") %>%
@@ -712,13 +713,22 @@ tab2 <- make_tbl_colorful(tab_2oc)
 tab_3oc <- simulate_table() %>% gen_total2()
 tab3 <- make_tbl_colorful(tab_3oc)
 
-ranking_gen <- tab_1oc %>% filter(grepl("TOTAL", Variable)) %>% select(-1, -TOTAL) %>% unlist() 
-ranking_postop <- tab_1oc %>% filter(grepl("TOTAL", Variable)) %>% select(-1, -TOTAL) %>% unlist() 
-ranking_bak <- tab_1oc %>% filter(grepl("TOTAL", Variable)) %>% select(-1, -TOTAL) %>% unlist() 
+ranking_gen <- tab_1oc %>% gen_total2() %>% 
+  filter(grepl("TOTAL", Variable)) %>% 
+  select(-1, -TOTAL) %>% unlist() 
+ranking_postop <- tab_1oc %>% gen_total2() %>% 
+  filter(grepl("TOTAL", Variable)) %>% 
+  select(-1, -TOTAL) %>% unlist() 
+ranking_bak <- tab_1oc %>% gen_total2() %>% 
+  filter(grepl("TOTAL", Variable)) %>% 
+  select(-1, -TOTAL) %>% unlist() 
 
-avg_gen_site <- tab_1oc %>% filter(grepl("TOTAL", Variable)) %>% select(TOTAL) %>% unlist() %>% as.vector()
-avg_postop <- tab_2oc %>% filter(grepl("TOTAL", Variable)) %>% select(TOTAL) %>% unlist() %>% as.vector()
-avg_bak <- tab_3oc %>% filter(grepl("TOTAL", Variable)) %>% select(TOTAL) %>% unlist() %>% as.vector()
+avg_gen_site <- tab_1oc %>% filter(grepl("TOTAL", Variable)) %>% 
+  select(TOTAL) %>% unlist() %>% as.vector()
+avg_postop <- tab_2oc %>% filter(grepl("TOTAL", Variable)) %>% 
+  select(TOTAL) %>% unlist() %>% as.vector()
+avg_bak <- tab_3oc %>% filter(grepl("TOTAL", Variable)) %>% 
+  select(TOTAL) %>% unlist() %>% as.vector()
 
 make_ranking_trend <- function(datum) {
   id <- ymd(datum)
